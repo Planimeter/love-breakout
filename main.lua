@@ -48,6 +48,7 @@ local function setVelocity(a, velocity)
 end
 
 local function serve()
+    paddle.width  = PADDLE_WIDTH
     ball.x        = love.graphics.getWidth()/2
     ball.y        = love.graphics.getHeight()/2
     ball.velocity = {BALL_SPEED, BALL_SPEED}
@@ -138,6 +139,7 @@ function love.update(dt)
     if ball.y <= 0 then
         ball.velocity[2] = -ball.velocity[2]
         ball.y = 0
+        paddle.width = PADDLE_WIDTH/2
     end
 
     if ball.x <= 0 then
