@@ -129,6 +129,11 @@ function love.update(dt)
         ball.velocity[1] = -ball.velocity[1]
         ball.x = 0
     end
+
+    if score >= 896 and ball.y+ball.height >= love.graphics.getHeight() then
+        ball.velocity[2] = -ball.velocity[2]
+        ball.y = love.graphics.getHeight()-ball.height
+    end
 end
 
 function love.draw()
