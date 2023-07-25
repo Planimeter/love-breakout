@@ -23,6 +23,11 @@ local PADDLE_Y         = (858/HEIGHT)*love.graphics.getHeight()
 local paddle           = {x=PADDLE_X, y=PADDLE_Y, width=PADDLE_WIDTH, height=16,
                           color={59/255, 131/255, 189/255}}
 
+local ball             = {x=love.graphics.getWidth()/2,
+                          y=love.graphics.getHeight()/2,
+                          width=12, height=10,
+                          color={215/255, 215/255, 215/255}}
+
 function love.load()
     for y=1,BRICK_ROWS do
         local color = colors.yellow
@@ -64,5 +69,14 @@ function love.draw()
                                 paddle.y,
                                 paddle.width,
                                 paddle.height)
+    end
+
+    do
+        love.graphics.setColor(ball.color)
+        love.graphics.rectangle("fill",
+                                ball.x,
+                                ball.y,
+                                ball.width,
+                                ball.height)
     end
 end
