@@ -38,6 +38,14 @@ local function shouldCollide(a, b)
        and a.y < b.y+b.height and a.y+a.height > b.y
 end
 
+local function setVelocity(a, velocity)
+    local length  = math.sqrt(a.velocity[1]^2+a.velocity[2]^2)
+    a.velocity[1] = a.velocity[1]/length
+    a.velocity[2] = a.velocity[2]/length
+    a.velocity[1] = a.velocity[1]*velocity
+    a.velocity[2] = a.velocity[2]*velocity
+end
+
 local function serve()
     ball.x        = love.graphics.getWidth()/2
     ball.y        = love.graphics.getHeight()/2
@@ -77,7 +85,13 @@ function love.update(dt)
     ball.y = ball.y+ball.velocity[2]*dt
 
     if shouldCollide(ball, paddle) then
-        hits             =  hits+1
+        hits = hits+1
+        if hits == 4 then
+            setVelocity(ball, 2*BALL_SPEED)
+        end
+        if hits == 12 then
+            setVelocity(ball, 3*BALL_SPEED)
+        end
         local position   =  ball.x+ball.width/2-paddle.x
         local normal     =  math.max(0, math.min(position/paddle.width, 1))
         normal           =  (2*normal) - 1 -- [0,1] to [-1,1]
