@@ -23,10 +23,12 @@ local PADDLE_Y         = (858/HEIGHT)*love.graphics.getHeight()
 local paddle           = {x=PADDLE_X, y=PADDLE_Y, width=PADDLE_WIDTH, height=16,
                           color={59/255, 131/255, 189/255}}
 
+local BALL_SPEED       = 225
 local ball             = {x=love.graphics.getWidth()/2,
                           y=love.graphics.getHeight()/2,
                           width=12, height=10,
-                          color={215/255, 215/255, 215/255}}
+                          color={215/255, 215/255, 215/255},
+                          velocity={BALL_SPEED, BALL_SPEED}}
 
 function love.load()
     for y=1,BRICK_ROWS do
@@ -50,6 +52,29 @@ end
 
 function love.update(dt)
     paddle.x = love.mouse.getX()-paddle.width/2
+
+    ball.x = ball.x+ball.velocity[1]*dt
+    ball.y = ball.y+ball.velocity[2]*dt
+
+    if ball.y+ball.height >= paddle.y then
+        ball.velocity[2] = -ball.velocity[2]
+        ball.y = paddle.y-ball.height
+    end
+
+    if ball.x+ball.width >= love.graphics.getWidth() then
+        ball.velocity[1] = -ball.velocity[1]
+        ball.x = love.graphics.getWidth()-ball.width
+    end
+
+    if ball.y <= 0 then
+        ball.velocity[2] = -ball.velocity[2]
+        ball.y = 0
+    end
+
+    if ball.x <= 0 then
+        ball.velocity[1] = -ball.velocity[1]
+        ball.x = 0
+    end
 end
 
 function love.draw()
