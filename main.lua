@@ -75,7 +75,13 @@ function love.update(dt)
     ball.y = ball.y+ball.velocity[2]*dt
 
     if shouldCollide(ball, paddle) then
-        ball.velocity[2] = -ball.velocity[2]
+        local position   =  ball.x+ball.width/2-paddle.x
+        local normal     =  math.max(0, math.min(position/paddle.width, 1))
+        normal           =  (2*normal) - 1 -- [0,1] to [-1,1]
+        local angle      =  normal*math.rad(60)
+        local velocity   =  math.sqrt(ball.velocity[1]^2+ball.velocity[2]^2)
+        ball.velocity[1] =  math.sin(angle)*velocity
+        ball.velocity[2] = -math.cos(angle)*velocity
         ball.y = paddle.y-ball.height
     end
 
