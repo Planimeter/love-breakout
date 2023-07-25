@@ -53,6 +53,23 @@ local function serve()
     hits          = 0
 end
 
+local function onBallHitPaddle()
+    hits = hits+1
+    if hits == 4 then
+        setVelocity(ball, 2*BALL_SPEED)
+    end
+    if hits == 12 then
+        setVelocity(ball, 3*BALL_SPEED)
+    end
+    local position   =  ball.x+ball.width/2-paddle.x
+    local normal     =  math.max(0, math.min(position/paddle.width, 1))
+    normal           =  (2*normal) - 1 -- [0,1] to [-1,1]
+    local angle      =  normal*math.rad(60)
+    local velocity   =  math.sqrt(ball.velocity[1]^2+ball.velocity[2]^2)
+    ball.velocity[1] =  math.sin(angle)*velocity
+    ball.velocity[2] = -math.cos(angle)*velocity
+end
+
 function love.load()
     for y=1,BRICK_ROWS do
         local color  = colors.yellow
@@ -85,21 +102,8 @@ function love.update(dt)
     ball.y = ball.y+ball.velocity[2]*dt
 
     if shouldCollide(ball, paddle) then
-        hits = hits+1
-        if hits == 4 then
-            setVelocity(ball, 2*BALL_SPEED)
-        end
-        if hits == 12 then
-            setVelocity(ball, 3*BALL_SPEED)
-        end
-        local position   =  ball.x+ball.width/2-paddle.x
-        local normal     =  math.max(0, math.min(position/paddle.width, 1))
-        normal           =  (2*normal) - 1 -- [0,1] to [-1,1]
-        local angle      =  normal*math.rad(60)
-        local velocity   =  math.sqrt(ball.velocity[1]^2+ball.velocity[2]^2)
-        ball.velocity[1] =  math.sin(angle)*velocity
-        ball.velocity[2] = -math.cos(angle)*velocity
         ball.y = paddle.y-ball.height
+        onBallHitPaddle()
     end
 
     if ball.x+ball.width >= love.graphics.getWidth() then
