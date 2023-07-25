@@ -43,6 +43,10 @@ function love.load()
     end
 end
 
+function love.update(dt)
+    paddle.x = love.mouse.getX()-paddle.width/2
+end
+
 function love.draw()
     for i,brick in ipairs(bricks) do
         love.graphics.setColor(brick.color)
