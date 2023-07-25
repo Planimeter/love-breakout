@@ -35,6 +35,12 @@ local function shouldCollide(a, b)
        and a.y < b.y+b.height and a.y+a.height > b.y
 end
 
+local function serve()
+    ball.x        = love.graphics.getWidth()/2
+    ball.y        = love.graphics.getHeight()/2
+    ball.velocity = {BALL_SPEED, BALL_SPEED}
+end
+
 function love.load()
     for y=1,BRICK_ROWS do
         local color = colors.yellow
@@ -117,5 +123,13 @@ function love.draw()
                                 ball.y,
                                 ball.width,
                                 ball.height)
+    end
+end
+
+function love.keypressed(key)
+    if key == "s" then
+        if ball.y > love.graphics.getHeight() then
+            serve()
+        end
     end
 end
