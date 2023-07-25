@@ -111,6 +111,10 @@ function love.update(dt)
         if shouldCollide(ball, brick) then
             table.remove(bricks, i)
             score = score + brick.points
+            if score == 448 then
+                love.load()
+                serve()
+            end
             ball.velocity[2] = -ball.velocity[2]
             break
         end
