@@ -30,6 +30,8 @@ local ball             = {x=love.graphics.getWidth()/2,
                           color={215/255, 215/255, 215/255},
                           velocity={BALL_SPEED, BALL_SPEED}}
 
+local score            = 0
+
 local function shouldCollide(a, b)
     return a.x < b.x+b.width  and a.x+a.width  > b.x
        and a.y < b.y+b.height and a.y+a.height > b.y
@@ -43,20 +45,24 @@ end
 
 function love.load()
     for y=1,BRICK_ROWS do
-        local color = colors.yellow
+        local color  = colors.yellow
+        local points = 1
         if     y == 1 or y == 2 then
-              color = colors.red
+              color  = colors.red
+              points = 7
         elseif y == 3 or y == 4 then
-              color = colors.orange
+              color  = colors.orange
+              points = 5
         elseif y == 5 or y == 6 then
-              color = colors.green
+              color  = colors.green
+              points = 3
         end
         for x=1,BRICK_COLUMNS do
             local brick = {x=(x-1)*BRICK_WIDTH +(x-1)*BRICK_GUTTER_X,
                            y=BRICK_MARGIN_TOP
                             +(y-1)*BRICK_HEIGHT+(y-1)*BRICK_GUTTER_Y,
                            width=BRICK_WIDTH, height=BRICK_HEIGHT,
-                           color=color}
+                           color=color, points=points}
             table.insert(bricks, brick)
         end
     end
@@ -81,6 +87,7 @@ function love.update(dt)
     for i,brick in ipairs(bricks) do
         if shouldCollide(ball, brick) then
             table.remove(bricks, i)
+            score = score + brick.points
             ball.velocity[2] = -ball.velocity[2]
             break
         end
@@ -124,6 +131,8 @@ function love.draw()
                                 ball.width,
                                 ball.height)
     end
+
+    love.graphics.print(score)
 end
 
 function love.keypressed(key)
