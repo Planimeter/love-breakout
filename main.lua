@@ -11,7 +11,7 @@ local BRICK_GUTTER_Y   = 5
 local BRICK_WIDTH      = love.graphics.getWidth()/BRICK_COLUMNS-BRICK_GUTTER_X
                          +BRICK_GUTTER_X/BRICK_COLUMNS
 local BRICK_HEIGHT     = 12
-local bricks           = {}
+local bricks
 local colors           = {red   ={150/255,  44/255, 25/255},
                           orange={185/255, 136/255, 47/255},
                           green ={ 59/255, 131/255, 61/255},
@@ -32,6 +32,7 @@ local ball             = {x=love.graphics.getWidth()/2,
 
 local score            = 0
 local hits             = 0
+local lives            = 1
 
 local function shouldCollide(a, b)
     return a.x < b.x+b.width  and a.x+a.width  > b.x
@@ -80,6 +81,8 @@ local function onPlayerHitBrick(brick, i)
 end
 
 function love.load()
+    bricks = {}
+
     for y=1,BRICK_ROWS do
         local color  = colors.yellow
         local points = 1
@@ -106,6 +109,10 @@ end
 
 function love.update(dt)
     paddle.x = love.mouse.getX()-paddle.width/2
+
+    if ball.y >= love.graphics.getHeight() then
+        return
+    end
 
     ball.x = ball.x+ball.velocity[1]*dt
     ball.y = ball.y+ball.velocity[2]*dt
@@ -136,6 +143,10 @@ function love.update(dt)
     if ball.x <= 0 then
         ball.velocity[1] = -ball.velocity[1]
         ball.x = 0
+    end
+
+    if ball.y >= love.graphics.getHeight() then
+        lives = lives + 1
     end
 
     if score >= 896 and ball.y+ball.height >= love.graphics.getHeight() then
@@ -172,13 +183,24 @@ function love.draw()
                                 ball.height)
     end
 
-    love.graphics.print(score)
+    love.graphics.print(lives)
+    local font = love.graphics.getFont()
+    local y    = font:getHeight()
+    love.graphics.print(score, 0, y)
 end
 
 function love.keypressed(key)
     if key == "s" then
-        if ball.y > love.graphics.getHeight() then
-            serve()
+        if ball.y < love.graphics.getHeight() then
+            return
         end
+
+        if lives > 3 then
+            score = 0
+            lives = 1
+            love.load()
+        end
+
+        serve()
     end
 end
