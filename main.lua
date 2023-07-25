@@ -70,6 +70,15 @@ local function onBallHitPaddle()
     ball.velocity[2] = -math.cos(angle)*velocity
 end
 
+local function onPlayerHitBrick(brick, i)
+    table.remove(bricks, i)
+    score = score + brick.points
+    if score == 448 then
+        love.load()
+        serve()
+    end
+end
+
 function love.load()
     for y=1,BRICK_ROWS do
         local color  = colors.yellow
@@ -113,13 +122,8 @@ function love.update(dt)
 
     for i,brick in ipairs(bricks) do
         if shouldCollide(ball, brick) then
-            table.remove(bricks, i)
-            score = score + brick.points
-            if score == 448 then
-                love.load()
-                serve()
-            end
             ball.velocity[2] = -ball.velocity[2]
+            onPlayerHitBrick(brick, i)
             break
         end
     end
