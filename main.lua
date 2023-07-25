@@ -30,6 +30,11 @@ local ball             = {x=love.graphics.getWidth()/2,
                           color={215/255, 215/255, 215/255},
                           velocity={BALL_SPEED, BALL_SPEED}}
 
+local function shouldCollide(a, b)
+    return a.x < b.x+b.width  and a.x+a.width  > b.x
+       and a.y < b.y+b.height and a.y+a.height > b.y
+end
+
 function love.load()
     for y=1,BRICK_ROWS do
         local color = colors.yellow
@@ -56,7 +61,7 @@ function love.update(dt)
     ball.x = ball.x+ball.velocity[1]*dt
     ball.y = ball.y+ball.velocity[2]*dt
 
-    if ball.y+ball.height >= paddle.y then
+    if shouldCollide(ball, paddle) then
         ball.velocity[2] = -ball.velocity[2]
         ball.y = paddle.y-ball.height
     end
