@@ -49,6 +49,7 @@ function love.load()
             local brick = {x=(x-1)*BRICK_WIDTH +(x-1)*BRICK_GUTTER_X,
                            y=BRICK_MARGIN_TOP
                             +(y-1)*BRICK_HEIGHT+(y-1)*BRICK_GUTTER_Y,
+                           width=BRICK_WIDTH, height=BRICK_HEIGHT,
                            color=color}
             table.insert(bricks, brick)
         end
@@ -71,6 +72,14 @@ function love.update(dt)
         ball.x = love.graphics.getWidth()-ball.width
     end
 
+    for i,brick in ipairs(bricks) do
+        if shouldCollide(ball, brick) then
+            table.remove(bricks, i)
+            ball.velocity[2] = -ball.velocity[2]
+            break
+        end
+    end
+
     if ball.y <= 0 then
         ball.velocity[2] = -ball.velocity[2]
         ball.y = 0
@@ -88,8 +97,8 @@ function love.draw()
         love.graphics.rectangle("fill",
                                 brick.x,
                                 brick.y,
-                                BRICK_WIDTH,
-                                BRICK_HEIGHT)
+                                brick.width,
+                                brick.height)
     end
 
     do
