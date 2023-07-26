@@ -23,14 +23,14 @@ local PADDLE_X         = love.graphics.getWidth()/2-PADDLE_WIDTH/2
 local PADDLE_Y         = (858/HEIGHT)*love.graphics.getHeight()
 local paddle           = {x=PADDLE_X, y=PADDLE_Y, width=PADDLE_WIDTH,
                           height=PADDLE_HEIGHT,
-                          color={59/255, 131/255, 189/255}}
+                          color={59/255, 131/255, 189/255}, __type="paddle"}
 
 local BALL_SPEED       = 225
 local ball             = {x=love.graphics.getWidth()/2,
                           y=love.graphics.getHeight()/2,
                           width=12, height=12,
                           color={215/255, 215/255, 215/255},
-                          velocity={BALL_SPEED, BALL_SPEED}}
+                          velocity={BALL_SPEED, BALL_SPEED}, __type="ball"}
 
 local score            = 0
 local hits             = 0
@@ -53,6 +53,45 @@ local function setVelocity(a, velocity)
     a.velocity[2] = a.velocity[2]*velocity
 end
 
+local onBallHitPaddle
+local onPlayerHitBrick
+
+local function beginContact(a, b, contact)
+    a = a:getUserData()
+    b = b:getUserData()
+    if (a.__type == "ball"   and b.__type == "paddle")
+    or (a.__type == "paddle" and b.__type == "ball") then
+        onBallHitPaddle()
+    end
+
+    if a.__type == "ball" and b.__type == "brick" then
+        for i,brick in ipairs(bricks) do
+            if b == brick then
+                onPlayerHitBrick(b, i)
+                break
+            end
+        end
+    end
+
+    if a.__type == "brick"  and b.__type == "ball" then
+        for i,brick in ipairs(bricks) do
+            if a == brick then
+                onPlayerHitBrick(a, i)
+                break
+            end
+        end
+    end
+end
+
+local function endContact(a, b, contact)
+end
+
+local function preSolve(a, b, contact)
+end
+
+local function postSolve(a, b, contact, normalimpulse, tangentimpulse)
+end
+
 local function serve()
     paddle.width   = PADDLE_WIDTH
     paddle.body:destroy()
@@ -62,19 +101,23 @@ local function serve()
     paddle.shape   = love.physics.newRectangleShape(paddle.width,
                                                     paddle.height)
     paddle.fixture = love.physics.newFixture(paddle.body, paddle.shape)
+    paddle.fixture:setUserData(paddle)
     ball.x         = love.graphics.getWidth()/2
     ball.y         = love.graphics.getHeight()/2
     ball.velocity  = {BALL_SPEED, BALL_SPEED}
     ball.body:destroy()
     ball.body      = nil
-    ball.body      = love.physics.newBody(world, ball.x+ball.width/2,
-                                                 ball.y+ball.width/2)
+    ball.body      = love.physics.newBody(world,
+                                          ball.x+ball.width/2,
+                                          ball.y+ball.width/2,
+                                          "dynamic")
     ball.shape     = love.physics.newCircleShape(ball.width/2)
     ball.fixture   = love.physics.newFixture(ball.body, ball.shape)
+    ball.fixture:setUserData(ball)
     hits           = 0
 end
 
-local function onBallHitPaddle()
+onBallHitPaddle = function()
     hits = hits+1
     if hits == 4 then
         setVelocity(ball, 2*BALL_SPEED)
@@ -89,9 +132,12 @@ local function onBallHitPaddle()
     local velocity   =  math.sqrt(ball.velocity[1]^2+ball.velocity[2]^2)
     ball.velocity[1] =  math.sin(angle)*velocity
     ball.velocity[2] = -math.cos(angle)*velocity
+    ball.body:setLinearVelocity(ball.velocity[1], ball.velocity[2])
 end
 
-local function onPlayerHitBrick(brick, i)
+onPlayerHitBrick = function(brick, i)
+    ball.velocity[2] = -ball.velocity[2]
+    ball.body:setLinearVelocity(ball.velocity[1], ball.velocity[2])
     table.remove(bricks, i)
     brick.body:destroy()
     brick.body = nil
@@ -105,6 +151,7 @@ end
 function love.load()
     bricks = {}
     world  = love.physics.newWorld()
+    world:setCallbacks(beginContact, endContact, preSolve, postSolve)
 
     for y=1,BRICK_ROWS do
         local color  = colors.yellow
@@ -124,12 +171,13 @@ function love.load()
                              y=BRICK_MARGIN_TOP
                               +(y-1)*BRICK_HEIGHT+(y-1)*BRICK_GUTTER_Y,
                              width=BRICK_WIDTH, height=BRICK_HEIGHT,
-                             color=color, points=points}
+                             color=color, points=points, __type="brick"}
             brick.body    = love.physics.newBody(world, brick.x+brick.width /2,
                                                         brick.y+brick.height/2)
             brick.shape   = love.physics.newRectangleShape(brick.width,
                                                            brick.height)
             brick.fixture = love.physics.newFixture(brick.body, brick.shape)
+            brick.fixture:setUserData(brick)
             table.insert(bricks, brick)
         end
     end
@@ -143,15 +191,19 @@ function love.load()
     paddle.shape   = love.physics.newRectangleShape(paddle.width,
                                                     paddle.height)
     paddle.fixture = love.physics.newFixture(paddle.body, paddle.shape)
+    paddle.fixture:setUserData(paddle)
 
     if ball.body then
        ball.body:destroy()
        ball.body   = nil
     end
-    ball.body      = love.physics.newBody(world, ball.x+ball.width/2,
-                                                 ball.y+ball.width/2)
+    ball.body      = love.physics.newBody(world,
+                                          ball.x+ball.width/2,
+                                          ball.y+ball.width/2,
+                                          "dynamic")
     ball.shape     = love.physics.newCircleShape(ball.width/2)
     ball.fixture   = love.physics.newFixture(ball.body, ball.shape)
+    ball.fixture:setUserData(ball)
 end
 
 function love.update(dt)
@@ -163,33 +215,21 @@ function love.update(dt)
         return
     end
 
-    ball.x = ball.x+ball.velocity[1]*dt
-    ball.y = ball.y+ball.velocity[2]*dt
-    ball.body:setPosition(ball.x, ball.y)
-
-    if shouldCollide(ball, paddle) then
-        ball.y = paddle.y-ball.height/2
-        ball.body:setY(ball.y)
-        onBallHitPaddle()
-    end
+    ball.x = ball.body:getX()+ball.velocity[1]*dt
+    ball.y = ball.body:getY()+ball.velocity[2]*dt
+    ball.body:setLinearVelocity(ball.velocity[1], ball.velocity[2])
 
     if ball.body:getX()+ball.width/2 >= love.graphics.getWidth() then
         ball.velocity[1] = -ball.velocity[1]
         ball.x = love.graphics.getWidth()-ball.width/2
+        ball.body:setLinearVelocity(ball.velocity[1], ball.velocity[2])
         ball.body:setX(ball.x)
-    end
-
-    for i,brick in ipairs(bricks) do
-        if shouldCollide(ball, brick) then
-            ball.velocity[2] = -ball.velocity[2]
-            onPlayerHitBrick(brick, i)
-            break
-        end
     end
 
     if ball.body:getY()-ball.width/2 <= 0 then
         ball.velocity[2] = -ball.velocity[2]
         ball.y = 0+ball.height/2
+        ball.body:setLinearVelocity(ball.velocity[1], ball.velocity[2])
         ball.body:setY(ball.y)
         if  paddle.width  ~= PADDLE_WIDTH/2 then
             paddle.width   = PADDLE_WIDTH/2
@@ -201,12 +241,14 @@ function love.update(dt)
             paddle.shape   = love.physics.newRectangleShape(paddle.width,
                                                             paddle.height)
             paddle.fixture = love.physics.newFixture(paddle.body, paddle.shape)
+            paddle.fixture:setUserData(paddle)
         end
     end
 
     if ball.body:getX()-ball.width/2 <= 0 then
         ball.velocity[1] = -ball.velocity[1]
         ball.x = ball.width/2
+        ball.body:setLinearVelocity(ball.velocity[1], ball.velocity[2])
         ball.body:setX(ball.x)
     end
 
@@ -214,9 +256,11 @@ function love.update(dt)
         lives = lives + 1
     end
 
-    if score >= 896 and ball.y+ball.height/2 >= love.graphics.getHeight() then
+    if score >= 896 and
+       ball.body:getY()+ball.height/2 >= love.graphics.getHeight() then
         ball.velocity[2] = -ball.velocity[2]
         ball.y = love.graphics.getHeight()-ball.height/2
+        ball.body:setLinearVelocity(ball.velocity[1], ball.velocity[2])
         ball.body:setY(ball.y)
     end
 
