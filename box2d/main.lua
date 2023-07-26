@@ -76,6 +76,8 @@ end
 
 local function onPlayerHitBrick(brick, i)
     table.remove(bricks, i)
+    brick.body:destroy()
+    brick.body = nil
     score = score + brick.points
     if score == 448 then
         love.load()
@@ -101,11 +103,16 @@ function love.load()
               points = 3
         end
         for x=1,BRICK_COLUMNS do
-            local brick = {x=(x-1)*BRICK_WIDTH +(x-1)*BRICK_GUTTER_X,
-                           y=BRICK_MARGIN_TOP
-                            +(y-1)*BRICK_HEIGHT+(y-1)*BRICK_GUTTER_Y,
-                           width=BRICK_WIDTH, height=BRICK_HEIGHT,
-                           color=color, points=points}
+            local brick   = {x=(x-1)*BRICK_WIDTH +(x-1)*BRICK_GUTTER_X,
+                             y=BRICK_MARGIN_TOP
+                              +(y-1)*BRICK_HEIGHT+(y-1)*BRICK_GUTTER_Y,
+                             width=BRICK_WIDTH, height=BRICK_HEIGHT,
+                             color=color, points=points}
+            brick.body    = love.physics.newBody(world, brick.x+brick.width /2,
+                                                        brick.y+brick.height/2)
+            brick.shape   = love.physics.newRectangleShape(brick.width,
+                                                           brick.height)
+            brick.fixture = love.physics.newFixture(brick.body, brick.shape)
             table.insert(bricks, brick)
         end
     end
@@ -166,11 +173,8 @@ end
 function love.draw()
     for i,brick in ipairs(bricks) do
         love.graphics.setColor(brick.color)
-        love.graphics.rectangle("fill",
-                                brick.x,
-                                brick.y,
-                                brick.width,
-                                brick.height)
+        love.graphics.polygon("fill",
+                              brick.body:getWorldPoints(brick.shape:getPoints()))
     end
 
     do
