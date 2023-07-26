@@ -34,6 +34,8 @@ local score            = 0
 local hits             = 0
 local lives            = 1
 
+local world
+
 local function shouldCollide(a, b)
     return a.x < b.x+b.width  and a.x+a.width  > b.x
        and a.y < b.y+b.height and a.y+a.height > b.y
@@ -83,6 +85,7 @@ end
 
 function love.load()
     bricks = {}
+    world  = love.physics.newWorld()
 
     for y=1,BRICK_ROWS do
         local color  = colors.yellow
@@ -112,6 +115,7 @@ function love.update(dt)
     paddle.x = love.mouse.getX()-paddle.width/2
 
     if ball.y >= love.graphics.getHeight() then
+        world:update(dt)
         return
     end
 
@@ -155,6 +159,8 @@ function love.update(dt)
         ball.velocity[2] = -ball.velocity[2]
         ball.y = love.graphics.getHeight()-ball.height
     end
+
+    world:update(dt)
 end
 
 function love.draw()
