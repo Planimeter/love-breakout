@@ -18,9 +18,11 @@ local colors           = {red   ={150/255,  44/255, 25/255},
                           yellow={194/255, 194/255, 74/255}}
 
 local PADDLE_WIDTH     = 41
+local PADDLE_HEIGHT    = 16
 local PADDLE_X         = love.graphics.getWidth()/2-PADDLE_WIDTH/2
 local PADDLE_Y         = (858/HEIGHT)*love.graphics.getHeight()
-local paddle           = {x=PADDLE_X, y=PADDLE_Y, width=PADDLE_WIDTH, height=16,
+local paddle           = {x=PADDLE_X, y=PADDLE_Y, width=PADDLE_WIDTH,
+                          height=PADDLE_HEIGHT,
                           color={59/255, 131/255, 189/255}}
 
 local BALL_SPEED       = 225
@@ -50,11 +52,18 @@ local function setVelocity(a, velocity)
 end
 
 local function serve()
-    paddle.width  = PADDLE_WIDTH
-    ball.x        = love.graphics.getWidth()/2
-    ball.y        = love.graphics.getHeight()/2
-    ball.velocity = {BALL_SPEED, BALL_SPEED}
-    hits          = 0
+    paddle.width   = PADDLE_WIDTH
+    paddle.body:destroy()
+    paddle.body    = nil
+    paddle.body    = love.physics.newBody(world, paddle.x+paddle.width /2,
+                                                 paddle.y+paddle.height/2)
+    paddle.shape   = love.physics.newRectangleShape(paddle.width,
+                                                    paddle.height)
+    paddle.fixture = love.physics.newFixture(paddle.body, paddle.shape)
+    ball.x         = love.graphics.getWidth()/2
+    ball.y         = love.graphics.getHeight()/2
+    ball.velocity  = {BALL_SPEED, BALL_SPEED}
+    hits           = 0
 end
 
 local function onBallHitPaddle()
@@ -116,10 +125,21 @@ function love.load()
             table.insert(bricks, brick)
         end
     end
+
+    if paddle.body then
+       paddle.body:destroy()
+       paddle.body = nil
+    end
+    paddle.body    = love.physics.newBody(world, paddle.x+paddle.width /2,
+                                                 paddle.y+paddle.height/2)
+    paddle.shape   = love.physics.newRectangleShape(paddle.width,
+                                                    paddle.height)
+    paddle.fixture = love.physics.newFixture(paddle.body, paddle.shape)
 end
 
 function love.update(dt)
     paddle.x = love.mouse.getX()-paddle.width/2
+    paddle.body:setX(paddle.x+paddle.width/2)
 
     if ball.y >= love.graphics.getHeight() then
         world:update(dt)
@@ -150,7 +170,17 @@ function love.update(dt)
     if ball.y <= 0 then
         ball.velocity[2] = -ball.velocity[2]
         ball.y = 0
-        paddle.width = PADDLE_WIDTH/2
+        if  paddle.width  ~= PADDLE_WIDTH/2 then
+            paddle.width   = PADDLE_WIDTH/2
+            paddle.body:destroy()
+            paddle.body    = nil
+            paddle.body    = love.physics.newBody(world,
+                                                  paddle.x+paddle.width /2,
+                                                  paddle.y+paddle.height/2)
+            paddle.shape   = love.physics.newRectangleShape(paddle.width,
+                                                            paddle.height)
+            paddle.fixture = love.physics.newFixture(paddle.body, paddle.shape)
+        end
     end
 
     if ball.x <= 0 then
@@ -179,11 +209,8 @@ function love.draw()
 
     do
         love.graphics.setColor(paddle.color)
-        love.graphics.rectangle("fill",
-                                paddle.x,
-                                paddle.y,
-                                paddle.width,
-                                paddle.height)
+        love.graphics.polygon("fill",
+                              paddle.body:getWorldPoints(paddle.shape:getPoints()))
     end
 
     do
