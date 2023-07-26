@@ -39,8 +39,10 @@ local lives            = 1
 local world
 
 local function shouldCollide(a, b)
-    return a.x < b.x+b.width  and a.x+a.width  > b.x
-       and a.y < b.y+b.height and a.y+a.height > b.y
+    return a.body:getX()-a.width /2 < b.body:getX()+b.width /2
+       and a.body:getX()+a.width /2 > b.body:getX()-b.width /2
+       and a.body:getY()-a.height/2 < b.body:getY()+b.height/2
+       and a.body:getY()+a.height/2 > b.body:getY()-b.height/2
 end
 
 local function setVelocity(a, velocity)
