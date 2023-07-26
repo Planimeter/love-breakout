@@ -28,7 +28,7 @@ local paddle           = {x=PADDLE_X, y=PADDLE_Y, width=PADDLE_WIDTH,
 local BALL_SPEED       = 225
 local ball             = {x=love.graphics.getWidth()/2,
                           y=love.graphics.getHeight()/2,
-                          width=12, height=10,
+                          width=12, height=12,
                           color={215/255, 215/255, 215/255},
                           velocity={BALL_SPEED, BALL_SPEED}}
 
@@ -63,6 +63,12 @@ local function serve()
     ball.x         = love.graphics.getWidth()/2
     ball.y         = love.graphics.getHeight()/2
     ball.velocity  = {BALL_SPEED, BALL_SPEED}
+    ball.body:destroy()
+    ball.body      = nil
+    ball.body      = love.physics.newBody(world, ball.x+ball.width/2,
+                                                 ball.y+ball.width/2)
+    ball.shape     = love.physics.newCircleShape(ball.width/2)
+    ball.fixture   = love.physics.newFixture(ball.body, ball.shape)
     hits           = 0
 end
 
@@ -135,28 +141,40 @@ function love.load()
     paddle.shape   = love.physics.newRectangleShape(paddle.width,
                                                     paddle.height)
     paddle.fixture = love.physics.newFixture(paddle.body, paddle.shape)
+
+    if ball.body then
+       ball.body:destroy()
+       ball.body   = nil
+    end
+    ball.body      = love.physics.newBody(world, ball.x+ball.width/2,
+                                                 ball.y+ball.width/2)
+    ball.shape     = love.physics.newCircleShape(ball.width/2)
+    ball.fixture   = love.physics.newFixture(ball.body, ball.shape)
 end
 
 function love.update(dt)
     paddle.x = love.mouse.getX()-paddle.width/2
     paddle.body:setX(paddle.x+paddle.width/2)
 
-    if ball.y >= love.graphics.getHeight() then
+    if ball.y-ball.height/2 >= love.graphics.getHeight() then
         world:update(dt)
         return
     end
 
     ball.x = ball.x+ball.velocity[1]*dt
     ball.y = ball.y+ball.velocity[2]*dt
+    ball.body:setPosition(ball.x, ball.y)
 
     if shouldCollide(ball, paddle) then
-        ball.y = paddle.y-ball.height
+        ball.y = paddle.y-ball.height/2
+        ball.body:setY(ball.y)
         onBallHitPaddle()
     end
 
-    if ball.x+ball.width >= love.graphics.getWidth() then
+    if ball.body:getX()+ball.width/2 >= love.graphics.getWidth() then
         ball.velocity[1] = -ball.velocity[1]
-        ball.x = love.graphics.getWidth()-ball.width
+        ball.x = love.graphics.getWidth()-ball.width/2
+        ball.body:setX(ball.x)
     end
 
     for i,brick in ipairs(bricks) do
@@ -167,9 +185,10 @@ function love.update(dt)
         end
     end
 
-    if ball.y <= 0 then
+    if ball.body:getY()-ball.width/2 <= 0 then
         ball.velocity[2] = -ball.velocity[2]
-        ball.y = 0
+        ball.y = 0+ball.height/2
+        ball.body:setY(ball.y)
         if  paddle.width  ~= PADDLE_WIDTH/2 then
             paddle.width   = PADDLE_WIDTH/2
             paddle.body:destroy()
@@ -183,18 +202,20 @@ function love.update(dt)
         end
     end
 
-    if ball.x <= 0 then
+    if ball.body:getX()-ball.width/2 <= 0 then
         ball.velocity[1] = -ball.velocity[1]
-        ball.x = 0
+        ball.x = ball.width/2
+        ball.body:setX(ball.x)
     end
 
-    if ball.y >= love.graphics.getHeight() then
+    if ball.y-ball.height/2 >= love.graphics.getHeight() then
         lives = lives + 1
     end
 
-    if score >= 896 and ball.y+ball.height >= love.graphics.getHeight() then
+    if score >= 896 and ball.y+ball.height/2 >= love.graphics.getHeight() then
         ball.velocity[2] = -ball.velocity[2]
-        ball.y = love.graphics.getHeight()-ball.height
+        ball.y = love.graphics.getHeight()-ball.height/2
+        ball.body:setY(ball.y)
     end
 
     world:update(dt)
@@ -215,11 +236,8 @@ function love.draw()
 
     do
         love.graphics.setColor(ball.color)
-        love.graphics.rectangle("fill",
-                                ball.x,
-                                ball.y,
-                                ball.width,
-                                ball.height)
+        local x, y = ball.body:getWorldPoint(ball.shape:getPoint())
+        love.graphics.circle("fill", x, y, ball.shape:getRadius())
     end
 
     love.graphics.print(lives)
